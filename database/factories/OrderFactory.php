@@ -16,7 +16,7 @@ $factory->define(App\Models\Order::class, function (Faker $faker) {
 
     return [
         'address'        => [
-            'address'       => $address->full_address,
+            'address'       => $address->getFullAddressAttribute(),
             'zip'           => $address->zip,
             'contact_name'  => $address->contact_name,
             'contact_phone' => $address->contact_phone,

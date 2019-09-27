@@ -69,7 +69,8 @@
           <div class="col-sm-10">
             <select name="address" class="form-control">
               @foreach($addresses as $address)
-                <option value="{{ $address->id }}">{{ $address->full_address }} {{ $address->contact_name }} {{ $address->contact_phone }}</option>
+                <!-- <option value="{{ $address->id }}">{{ $address->full_address }} {{ $address->contact_name }} {{ $address->contact_phone }}</option> -->
+                <option value="{{ $address->id }}">{{ $address->getFullAddressAttribute() }}</option>
               @endforeach
             </select>
           </div>
