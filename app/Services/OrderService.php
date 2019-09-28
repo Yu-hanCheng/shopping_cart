@@ -72,7 +72,7 @@ class OrderService
         });
 
         // 開啟一個任務，一段時間仍未付款者，將自動結束訂單
-        dispatch(new CloseOrder($order, config('app.order_ttl')));
+        // dispatch(new CloseOrder($order, config('app.order_ttl')));
 
         return $order;
     }

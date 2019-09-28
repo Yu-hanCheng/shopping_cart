@@ -39,23 +39,23 @@ class PaymentController extends Controller
     public function websiteNotify(Request $request)
     {
         $data = $request->all();
-
+        
         if (!$order = order::where('no', $data['out_trade_no'])->first()) {
             return;
         }
 
-        if ($order->paid_at) {
-            return redirect()->route('orders.show', [$order]);
-        }
-
+        
         $order->update([
             'paid_at'        => now(),
             'payment_method' => 'website',
             'payment_no'     => $data['trade_no'],
         ]);
+        if ($order->paid_at) {
+            return redirect()->route('orders.show', [$order]);
+        }
 
         $this->afterPaid($order);
-
+        
         return redirect()->route('orders.show', [$order]);
     }
 
