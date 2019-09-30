@@ -35,3 +35,4 @@ Route::middleware('auth')->group(function () {
 Route::resource('products', 'ProductController')->only(['index', 'show']);
 
 Route::post('payment/website/notify', 'PaymentController@websiteNotify')->name('payment.website.notify');
+Route::post('payment/website/listenPayResult', 'PaymentController@listenPayResult')->name('payment.website.listenPayResult');
