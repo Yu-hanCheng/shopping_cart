@@ -26,7 +26,7 @@ class OrderController extends Controller
             ->where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
             ->paginate();
-
+        
         return view('orders.index', compact('orders'));
     }
 
@@ -55,8 +55,8 @@ class OrderController extends Controller
     {
         $this->authorize('own', $order);
 
-        $order->load(['items.productSku', 'items.product']);
-
+        $order = $order->load(['items.productSku', 'items.product']);
+        
         return view('orders.show', compact('order'));
     }
 
@@ -143,7 +143,17 @@ class OrderController extends Controller
     public function applyRefund(Order $order, ApplyRefundRequest $request)
     {
         $this->authorize('own', $order);
+        $out = new \Symfony\Component\Console\Output\ConsoleOutput();
 
+        try {
+            // // * TEST 1
+            $paymentController = new PaymentController();
+            $paymentController->refund($order, $request);
+
+        } catch (\Throwable $th) {
+            // throw $th;
+            $out->writeln("th: ".$th);
+        }
         if (!$order->paid_at) {
             throw new InvalidRequestException('該訂單未支付，不可退款');
         }
@@ -158,7 +168,7 @@ class OrderController extends Controller
             'refund_status' => Order::REFUND_STATUS_APPLIED,
             'extra' => $extra,
         ]);
-
+        
         return $order;
     }
 }
