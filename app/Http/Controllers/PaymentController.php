@@ -25,7 +25,7 @@ class PaymentController extends Controller
      * @param  \App\Models\Order  $order
      * @return \Illuminate\Http\Response
      */
-    public function payByWebsite(Order $order)
+    public function payByWebsite(Order $order, PaymentService $service)
     {
         $this->authorize('own', $order);
 
@@ -34,49 +34,14 @@ class PaymentController extends Controller
             throw new InvalidRequestException('無法付款');
         }
 
+        if ($service=='ECPay') {
+            $pay_obj = new ECPay();
+        } else if( $service=='Paypal') {
+            $pay_obj = new Paypal();
+        }
+        $pay_obj-> pay($order);
 
-        include('ECPay.Payment.Integration.php');
-            try {
-                
-                $obj = new ECPay_AllInOne();
-
-                //服務參數
-                $obj->ServiceURL  = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";  //服務位置
-                $obj->HashKey     = '5294y06JbISpM5x9' ;                                          //測試用Hashkey，請自行帶入ECPay提供的HashKey
-                $obj->HashIV      = 'v77hoKGq4kWxNNIS' ;                                          //測試用HashIV，請自行帶入ECPay提供的HashIV
-                $obj->MerchantID  = '2000214';                                                    //測試用MerchantID，請自行帶入ECPay提供的MerchantID
-                $obj->EncryptType = '1';                                                          //CheckMacValue加密類型，請固定填入1，使用SHA256加密
         
-
-                $MerchantTradeNo = substr($order['no'],10,10).time() ; 
-                //基本參數(請依系統規劃自行調整)
-                $obj->Send['ReturnURL']         = "http://c7d4deb2.ngrok.io/payment/website/listenPayResult" ;     //付款完成通知回傳的網址
-                $obj->Send['OrderResultURL']    = "http://c7d4deb2.ngrok.io/payment/website/notify";
-                $obj->Send['ClientBackURL']    ="http://c7d4deb2.ngrok.io/orders";
-                $obj->Send['MerchantTradeNo']   = $MerchantTradeNo;              //訂單編號
-                $obj->Send['MerchantTradeDate'] = date('Y/m/d H:i:s');                        //交易時間
-                $obj->Send['TotalAmount']       = $order->total_amount;                                       //交易金額
-                $obj->Send['TradeDesc']         = "ecpay test" ;                           //交易描述
-                $obj->Send['ChoosePayment']     = ECPay_PaymentMethod::ALL ;
-                                  //付款方式:全功能
-
-                $order->update([
-                    'payment_no'        => $MerchantTradeNo,
-                ]);
-            }catch (Exception $e) {
-                echo $e->getMessage();
-            }  
-            //訂單的商品資料
-            foreach ($order['items'] as $a_item)
-            {
-                array_push($obj->Send['Items'], array('Name'     => $a_item['product']->title,
-                                                        'Price'    => (int) $a_item->price,
-                                                        'Currency' => "元",
-                                                        'Quantity' => (int) $a_item['amount'],
-                                                        'URL'      => "dedwed"));
-            }
-            
-            $obj->CheckOut();
     }
 
     public function PaypalExec(Request $request)
@@ -87,8 +52,8 @@ class PaymentController extends Controller
 
         $apiContext = getApiContext($clientId, $clientSecret);
         include('ResultPrinter_by.php');
-        
-        
+
+
         $out = new \Symfony\Component\Console\Output\ConsoleOutput();
         $data = $request->all();
         $out->writeln("data: ".json_encode($data['paymentId']));
@@ -98,42 +63,46 @@ class PaymentController extends Controller
         $execution = new PaymentExecution();
         $execution->setPayerId($_GET['PayerID']);
 
-            try {
-                $result = $payment->execute($execution, $apiContext);
-                ResultPrinter_by::printResult("Executed Payment", "Payment", $payment->getId(), $execution, $result);
+        try {
+            $result = $payment->execute($execution, $apiContext);
+            ResultPrinter_by::printResult("Executed Payment", "Payment", $payment->getId(), $execution, $result);
 
-                try {
-                    $payment = Payment::get($paymentId, $apiContext);
-                } catch (Exception $ex) {
-                    // NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
-                    ResultPrinter_by::printError("Get Payment", "Payment", null, null, $ex);
-                    exit(1);
-                }
+            try {
+                $payment = Payment::get($paymentId, $apiContext);
             } catch (Exception $ex) {
                 // NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
-                ResultPrinter_by::printError("Executed Payment", "Payment", null, null, $ex);
+                ResultPrinter_by::printError("Get Payment", "Payment", null, null, $ex);
                 exit(1);
             }
-            ResultPrinter_by::printResult("Get Payment", "Payment", $payment->getId(), null, $payment);
-            
-            return $payment;
+        } catch (Exception $ex) {
+            // NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
+            ResultPrinter_by::printError("Executed Payment", "Payment", null, null, $ex);
+            exit(1);
+        }
+        ResultPrinter_by::printResult("Get Payment", "Payment", $payment->getId(), null, $payment);
+
+        return $payment;
     }
 
-    public function listenPayResult(Request $request)
+    public function listen(Request $request,PaymentService $service)
     {
-        if ($request->all()['RtnCode']){
-            $out = new \Symfony\Component\Console\Output\ConsoleOutput();
-            $data = $request->all();
-            $order = Order::where('payment_no', $data['MerchantTradeNo'])->first();
-            try {
-                $order->update([
-                    'paid_at'        => now(),
-                    'payment_method' => 'website',
-                    'trade_no'       => strval($data['TradeNo']),
-                ]);
-            } catch (\Throwable $th) {
-                $out->writeln("error: ".$th);
+        if ($service=='ECPay') {
+            if ($request->all()['RtnCode']){
+                $out = new \Symfony\Component\Console\Output\ConsoleOutput();
+                $data = $request->all();
+                $order = Order::where('payment_no', $data['MerchantTradeNo'])->first();
+                try {
+                    $order->update([
+                        'paid_at'        => now(),
+                        'payment_method' => 'website',
+                        'trade_no'       => strval($data['TradeNo']),
+                    ]);
+                } catch (\Throwable $th) {
+                    $out->writeln("error: ".$th);
+                }
             }
+        } else if( $service=='Paypal') {
+            // print the payment result
         }
         return '1|OK';
     }
@@ -162,13 +131,14 @@ class PaymentController extends Controller
         event(new OrderPaid($order));
     }
 
-    public function refund(Order $order,ApplyRefundRequest $request){
-        
+    public function refund(Order $order, PaymentService $service, ApplyRefundRequest $request)
+    {
+
         include('ECPay.Payment.Integration.php');
-        
+
         try {
-                
-            $obj = new ECPay_AllInOne();
+
+            $pay_obj = new ECPay_AllInOne();
 
             $ThatTime ="20:00:00";
             if (time() >= strtotime($ThatTime)) {
@@ -182,14 +152,14 @@ class PaymentController extends Controller
                 'Action' => $action,
                 'TotalAmount' => $order['total_amount']
             );
-            
+
             $capture = array(
                 'MerchantTradeNo' => $order['payment_no'],
                 'CaptureAMT' => 0,
                 'UserRefundAMT' => 0,
                 'PlatformID' => ''
             );
-    
+
             $tradeNo = array(
                 'DateType' => '',
                 'BeginDate' => $order['trade_no'],
@@ -199,34 +169,34 @@ class PaymentController extends Controller
             // 還要再加日期！?
 
             //服務參數
-            $obj->ServiceURL  = "https://payment.ecpay.com.tw/CreditDetail/DoAction";  //服務位置
-            $obj->HashKey     = '5294y06JbISpM5x9' ;                                          //測試用Hashkey，請自行帶入ECPay提供的HashKey
-            $obj->HashIV      = 'v77hoKGq4kWxNNIS' ;                                          //測試用HashIV，請自行帶入ECPay提供的HashIV
-            $obj->MerchantID  = '2000214';                                                    //測試用MerchantID，請自行帶入ECPay提供的MerchantID
-            $obj->EncryptType = '1';                                                           //CheckMacValue加密類型，請固定填入1，使用SHA256加密
-            $obj->Capture = $capture; 
-            $obj->TradeNo = $tradeNo; 
-            $obj->Action = $the_action_arr; 
-    
+            $pay_obj->ServiceURL  = "https://payment.ecpay.com.tw/CreditDetail/DoAction";  //服務位置
+            $pay_obj->HashKey     = '5294y06JbISpM5x9';                                          //測試用Hashkey，請自行帶入ECPay提供的HashKey
+            $pay_obj->HashIV      = 'v77hoKGq4kWxNNIS';                                          //測試用HashIV，請自行帶入ECPay提供的HashIV
+            $pay_obj->MerchantID  = '2000214';                                                    //測試用MerchantID，請自行帶入ECPay提供的MerchantID
+            $pay_obj->EncryptType = '1';                                                           //CheckMacValue加密類型，請固定填入1，使用SHA256加密
+            $pay_obj->Capture = $capture;
+            $pay_obj->TradeNo = $tradeNo;
+            $pay_obj->Action = $the_action_arr;
+
 
             //基本參數(請依系統規劃自行調整)
-            $obj->Send['ReturnURL']         = "http://c7d4deb2.ngrok.io/payment/website/listenPayResult" ;     //付款完成通知回傳的網址
-            $obj->Send['OrderResultURL']    = "http://c7d4deb2.ngrok.io/payment/website/notify";
-            $obj->Send['ClientBackURL']    ="http://c7d4deb2.ngrok.io/orders";
-            $obj->Send['MerchantTradeNo']   = $order['payment_no'];              //訂單編號
-            $obj->Send['MerchantTradeDate'] = date('Y/m/d H:i:s');                        //交易時間
-            $obj->Send['TotalAmount']       = $order->total_amount;                                       //交易金額
-            $obj->Send['TradeDesc']         = "ecpay test" ;                           //交易描述
-            $obj->Send['ChoosePayment']     = ECPay_PaymentMethod::ALL ;
-                              //付款方式:全功能
-            
+            $pay_obj->Send['ReturnURL']         = "http://f5268753.ngrok.io/payment/website/listenPayResult";     //付款完成通知回傳的網址
+            $pay_obj->Send['OrderResultURL']    = "http://f5268753.ngrok.io/payment/website/notify";
+            $pay_obj->Send['ClientBackURL']    = "http://f5268753.ngrok.io/orders";
+            $pay_obj->Send['MerchantTradeNo']   = $order['payment_no'];              //訂單編號
+            $pay_obj->Send['MerchantTradeDate'] = date('Y/m/d H:i:s');                        //交易時間
+            $pay_obj->Send['TotalAmount']       = $order->total_amount;                                       //交易金額
+            $pay_obj->Send['TradeDesc']         = "ecpay test";                           //交易描述
+            $pay_obj->Send['ChoosePayment']     = ECPay_PaymentMethod::ALL;
+            //付款方式:全功能
 
-            
-            
+
+
+
         }catch (Exception $e) {
             echo $e->getMessage();
-        }  
-        $obj->DoAction();
+        }
+        $pay_obj->DoAction();
     }
 }
 
