@@ -22,7 +22,7 @@
           <td class="product-info">
             <div class="preview">
               <a target="_blank" href="{{ route('products.show', [$item->product]) }}">
-                <img src="{{ $item->product->image_url }}">
+                <!-- <img src="{{ $item->product->image_url }}"> -->
               </a>
             </div>
             <div>
@@ -47,6 +47,7 @@
 
     <div class="row p-3">
       <div class="col-sm order-info">
+      <a href="https://p-stage.ecpay.com.tw/1BC1B"><img src="https://payment-stage.ecpay.com.tw/Content/themes/WebStyle20170517/images/ecbk.png" alt="" /></a>
         <div class="line">
           <div class="line-label">收貨地址：</div>
           <div class="line-value">{{ join(' ', $order->address) }}</div>
@@ -118,7 +119,10 @@
 
         @if(!$order->paid_at && !$order->closed)
         <div class="my-3 pr-4">
-          <a class="btn btn-primary btn-sm" href="{{ route('payment.website', [$order]) }}">
+          <a class="btn btn-primary btn-sm" href="{{ route('payment.website', [$order]) }}">ECPay
+            付款
+          </a>
+          <a class="btn btn-primary btn-sm" href="{{ route('payment.website.paypal', [$order]) }}">Paypal
             付款
           </a>
         </div>
@@ -137,11 +141,13 @@
         <div class="my-3 pr-4">
           @if ($order->refund_status === \App\Models\Order::REFUND_STATUS_PENDING)
           <button class="btn btn-sm btn-danger mr-1" id="btn-apply-refund">申請退款</button>
+          <button class="btn btn-sm btn-danger mr-1" id="btn-merchant-capture">商家取款</button>
           @endif
+
 
           <a class="btn btn-success btn-sm" href="{{ route('orders.review.show', $order) }}">
             {{ $order->reviewed ? '查看評價' : '評價' }}
-          </a>
+          </a>     
         </div>
         @endif
 
@@ -164,8 +170,20 @@
             return;
           }
 
-          axios.post('{{ route('orders.apply_refund', $order) }}', { reason: input }).then(function () {
+          axios.post('{{ route('payment.refund_paypal', $order) }}', { reason: input }).then(function () {
             swal('申請退款成功', '', 'success').then(function () {
+              location.reload();
+            });
+          })
+        })
+      })
+      $('#btn-merchant-capture').click(function () {
+        swal({
+          text: '請輸入取款金額',
+          content: 'input'
+        }).then(function (input) {
+          axios.post('{{ route('payment.MerchantCapture', $order) }}', { amount: input }).then(function () {
+            swal('取款成功', '', 'success').then(function () {
               location.reload();
             });
           })

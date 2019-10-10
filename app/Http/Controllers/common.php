@@ -9,7 +9,7 @@
  *
  * Class ResultPrinter
  */
-class ResultPrinter_by_s
+class ResultPrinter
 {
 
     private static $printResultCounter = 0;

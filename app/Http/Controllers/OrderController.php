@@ -22,6 +22,7 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
+
         $orders = Order::with(['items.product', 'items.productSku'])
             ->where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
@@ -41,8 +42,9 @@ class OrderController extends Controller
     {
         $user = $request->user();
         $address = UserAddress::find($request->input('address_id'));
+        $currency_code="THB";
 
-        return $orderService->store($user, $address, $request->input('remark'), $request->input('items'));
+        return $orderService->store($user, $address, $request->input('remark'), $request->input('items'),$currency_code);
     }
 
     /**
@@ -170,5 +172,13 @@ class OrderController extends Controller
         ]);
         
         return $order;
+    }
+    public function applyRefund_paypal(Order $order, ApplyRefundRequest $request){
+        return redirect()->route('payment.refund_paypal', compact('order'));
+    }
+    public function adminReview(Order $order)
+    {
+        
+        return redirect()->route('payment.refund_paypal', compact('order'));
     }
 }

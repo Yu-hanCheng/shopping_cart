@@ -21,5 +21,6 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         'payment/website/notify',
         '/payment/website/listenPayResult',
+        '/payment/{order}/refund_paypal'
     ];
 }

@@ -21,10 +21,10 @@ class OrderService
      * @param  array  $items
      * @return \App\Models\Order
      */
-    public function store(User $user, UserAddress $address, $remark, $items)
+    public function store(User $user, UserAddress $address, $remark, $items, $currency_code)
     {
         // 開啟一個資料庫事務
-        $order = \DB::transaction(function () use ($user, $address, $remark, $items) {
+        $order = \DB::transaction(function () use ($user, $address, $remark, $items,$currency_code) {
             // 更新此地址的最後使用時間
             $address->update(['last_used_at' => now()]);
             // 創建一個訂單
@@ -37,6 +37,7 @@ class OrderService
                 ],
                 'remark' => $remark,
                 'total_amount' => 0,
+                'currency_code'=> $currency_code,
             ]);
             // 訂單關聯到當前用戶
             $order->user()->associate($user);

@@ -19,16 +19,27 @@ Route::middleware('auth')->group(function () {
         Route::delete('cart/{sku}', 'CartController@remove')->name('cart.remove');
 
         // 訂單
+        // Route::get('orders/{order}/admin/review', 'OrderController@adminReview')->name('orders.admin.show');
         Route::post('orders/{order}/received', 'OrderController@received')->name('orders.received');
         Route::get('orders/{order}/review', 'OrderController@review')->name('orders.review.show');
         Route::post('orders/{order}/review', 'OrderController@sendReview')->name('orders.review.store');
         Route::resource('orders', 'OrderController', ['only' => ['index', 'store', 'show'],'names' => ['show' => 'orders.show','index' => 'orders.index']]);
 
+
+        // 取款
+        Route::post('payment/{order}/MerchantCapture', 'PaymentController@MerchantCapture')->name('payment.MerchantCapture');
+
+
         // 付款
         Route::get('payment/{order}/website', 'PaymentController@payByWebsite')->name('payment.website');
+        Route::get('payment/{order}/website/paypal', 'PaymentController@build')->name('payment.website.paypal');
+
+        Route::get('payment/website/PaypalExec', 'PaymentController@PaypalExec')->name('payment.website.PaypalExec');
+        Route::post('payment/{order}/refund_paypal', 'PaymentController@refund_paypal')->name('payment.refund_paypal');
 
         // 退款
         Route::post('orders/{order}/apply_refund', 'OrderController@applyRefund')->name('orders.apply_refund');
+        
     });
 });
 

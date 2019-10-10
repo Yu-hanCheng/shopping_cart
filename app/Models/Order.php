@@ -54,6 +54,9 @@ class Order extends Model
         'ship_data',
         'extra',
         'trade_no',
+        'capture_id',
+        'authorize_id',
+        'currency_code',
     ];
 
     /**

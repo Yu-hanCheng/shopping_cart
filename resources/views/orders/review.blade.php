@@ -10,7 +10,7 @@
       <a href="{{ route('orders.index') }}">返回訂單列表</a>
     @endslot
 
-    <form action="{{ route('orders.review.store', $order) }}" method="post">
+    <form action="{{ route('orders.review.store', $order_info) }}" method="post">
       @csrf
 
       <table class="table mb-0">
@@ -22,14 +22,14 @@
           </tr>
         </thead>
         <tbody>
-          @foreach($order->items as $index => $item)
+          @foreach($order_info->items as $index => $item)
           <tr>
 
             {{-- 商品名稱 --}}
             <td class="product-info">
               <div class="preview">
                 <a target="_blank" href="{{ route('products.show', $item->product) }}">
-                  <img src="{{ $item->product->image_url }}">
+                  <!-- <img src="{{ $item->product->image_url }}"> -->
                 </a>
               </div>
               <div>
@@ -49,7 +49,7 @@
 
             {{-- 評分 --}}
             <td class="align-middle">
-              @if($order->reviewed)
+              @if($order_info->reviewed)
               <span class="rating-star-yes">{{ str_repeat('★', $item->rating) }}</span><span class="rating-star-no">{{ str_repeat('★', 5 - $item->rating) }}</span>
               @else
               <ul class="rate-area">
@@ -63,7 +63,7 @@
 
             {{-- 評價 --}}
             <td class="{{ $errors->has('reviews.'.$index.'.review') ? 'has-error' : '' }}">
-              @if($order->reviewed)
+              @if($order_info->reviewed)
                 {{ $item->review }}
               @else
                 <textarea class="form-control @if($errors->has("reviews.{$index}.review")) is-invalid @endif" name="reviews[{{ $index }}][review]"></textarea>
@@ -79,10 +79,10 @@
         <tfoot>
           <tr>
             <td colspan="3" class="text-center">
-              @if(!$order->reviewed)
+              @if(!$order_info->reviewed)
               <button type="submit" class="btn btn-primary center-block">提交</button>
               @else
-              <a href="{{ route('orders.show', $order) }}" class="btn btn-primary">查看訂單</a>
+              <a href="{{ route('orders.show', $order_info) }}" class="btn btn-primary">查看訂單</a>
               @endif
             </td>
           </tr>
