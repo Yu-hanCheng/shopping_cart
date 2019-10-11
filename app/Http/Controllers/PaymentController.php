@@ -113,9 +113,9 @@ class PaymentController extends Controller
 
             $MerchantTradeNo = substr($order['no'], 10, 10) . time();
             //基本參數(請依系統規劃自行調整)
-            $obj->Send['ReturnURL']         = "http://44c396b2.ngrok.io/payment/website/listenPayResult";     //付款完成通知回傳的網址
-            $obj->Send['OrderResultURL']    = "http://44c396b2.ngrok.io/payment/website/notify";
-            $obj->Send['ClientBackURL']    = "http://44c396b2.ngrok.io/orders";
+            $obj->Send['ReturnURL']         = "http://f703e5b3.ngrok.io/payment/website/listenPayResult";     //付款完成通知回傳的網址
+            $obj->Send['OrderResultURL']    = "http://f703e5b3.ngrok.io/payment/website/notify";
+            $obj->Send['ClientBackURL']    = "http://f703e5b3.ngrok.io/orders";
             $obj->Send['MerchantTradeNo']   = $MerchantTradeNo;              //訂單編號
             $obj->Send['MerchantTradeDate'] = date('Y/m/d H:i:s');                        //交易時間
             $obj->Send['TotalAmount']       = $order->total_amount;                                       //交易金額
@@ -190,7 +190,7 @@ class PaymentController extends Controller
 
 
         $redirectUrls = new \PayPal\Api\RedirectUrls();
-        $redirectUrls->setReturnUrl("http://44c396b2.ngrok.io/payment/website/PaypalExec")
+        $redirectUrls->setReturnUrl("http://f703e5b3.ngrok.io/payment/website/PaypalExec")
             ->setCancelUrl("https://example.com/your_cancel_url.html");
 
         $payment = new \PayPal\Api\Payment();
@@ -371,9 +371,9 @@ class PaymentController extends Controller
 
 
             //基本參數(請依系統規劃自行調整)
-            $obj->Send['ReturnURL']         = "http://44c396b2.ngrok.io/payment/website/listenPayResult";     //付款完成通知回傳的網址
-            $obj->Send['OrderResultURL']    = "http://44c396b2.ngrok.io/payment/website/notify";
-            $obj->Send['ClientBackURL']    = "http://44c396b2.ngrok.io/orders";
+            $obj->Send['ReturnURL']         = "http://f703e5b3.ngrok.io/payment/website/listenPayResult";     //付款完成通知回傳的網址
+            $obj->Send['OrderResultURL']    = "http://f703e5b3.ngrok.io/payment/website/notify";
+            $obj->Send['ClientBackURL']    = "http://f703e5b3.ngrok.io/orders";
             $obj->Send['MerchantTradeNo']   = $order['payment_no'];              //訂單編號
             $obj->Send['MerchantTradeDate'] = date('Y/m/d H:i:s');                        //交易時間
             $obj->Send['TotalAmount']       = $order->total_amount;                                       //交易金額
@@ -386,41 +386,24 @@ class PaymentController extends Controller
         }
         $obj->DoAction();
     }
-    // public function refundCapturedPayment($refundRequest, $apiContext = null){
-    //     ArgumentValidator::validate($this->getId(), "Id");
-    //     ArgumentValidator::validate($refundRequest, 'refundRequest');
-    //     $payLoad = $refundRequest->toJSON();
-    //     $json = self::executeCall(
-    //         "/v2/payments/captures/{$this->getId()}/refund",
-    //         "POST",
-    //         $payLoad,
-    //         null,
-    //         $apiContext,
-    //     );
-    //     $ret = new DetailedRefund();
-    //     $ret->fromJson($json);
-    //     return $ret;
-    // }
 
     public function refund_paypal(Order $order){
-    
-        $payLoad = '{"amount": {"value":"'.$order->total_amount.'","currency_code":"'.$order->currency_code.'"}}';
-        // $payLoad = '{"amount":{"value":"470","currency_code":"THB"}}';
-        
-        try {
-            // $this->out->writeln(string($this->apiContext));
-            // ### Retrieve Capture details
-            $capture = Capture::get($order->capture_id, $this->apiContext);
-            $this->out->writeln("capture->getId(): " . $capture->getId());
+        $amount = new Amount();
+        $amount->setCurrency($order->currency_code)
+            ->setTotal($order->total_amount);
 
+        $refundRequest = new RefundRequest();
+        $refundRequest->setAmount($amount);
+        // Replace $captureId with any static Id you might already have. 
+        $captureId = $order->capture_id;
+        try {
+            // ### Retrieve Capture details
+            $capture = Capture::get($captureId, $this->apiContext);
             // ### Refund the Capture 
-            $captureRefund = $capture->refundCapturedPayment($payLoad, $this->apiContext);
-            $this->out->writeln("captureRefund: " . $captureRefund);
-        
+            $captureRefund = $capture->refundCapturedPayment($refundRequest, $this->apiContext);
+            $this->out->writeln("after captureRefund");
         } catch (Exception $ex) {
-            
-            $this->out->writeln("Capture error: " . $payLoad."er". $ex);
-            // NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
+            dd($ex->getMessage());
             exit(1);
         }
         return $order;
