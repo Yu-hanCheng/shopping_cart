@@ -33,7 +33,7 @@
                     <td class="product-info">
                       <div class="preview">
                         <a target="_blank" href="{{ route('products.show', [$item->product]) }}">
-                          <img src="{{ $item->product->image_url }}">
+                          <!-- <img src="{{ $item->product->image_url }}"> -->
                         </a>
                       </div>
                       <div>

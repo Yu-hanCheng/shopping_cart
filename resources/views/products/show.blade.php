@@ -11,7 +11,7 @@
         <div class="row">
           {{-- 商品圖片 --}}
           <div class="col-md-5">
-            <img class="cover" src="{{ $product->image_url }}" alt="">
+            <!-- <img class="cover" src="{{ $product->image_url }}" alt=""> -->
           </div>
 
           {{-- 商品主要資訊 --}}
@@ -78,7 +78,7 @@
             <div class="tab-pane fade" id="reviews" role="tabpanel">
               @foreach($reviews as $review)
               <div class="media mb-3">
-                <img src="{{ asset('svg/user.svg') }}" class="user-avatar rounded-circle mr-3">
+                <!-- <img src="{{ asset('svg/user.svg') }}" class="user-avatar rounded-circle mr-3"> -->
                 <div class="media-body">
                   <div class="text-muted">
                     <small>{{ $review->order->user->name }} · {{ $review->reviewed_at->diffForHumans(now()) }}</small>
