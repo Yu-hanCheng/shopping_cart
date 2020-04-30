@@ -12,7 +12,7 @@
     "dependencies": {
         "axios": "^0.19",
         "bootstrap": "^4.3.1",
-        "jquery": "^3.4.1",
+        "jquery": "^3.5.0",
         "lodash": "^4.17.13",
         "popper.js": "^1.15",
         "sweetalert": "^2.1.2",
